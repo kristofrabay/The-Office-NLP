@@ -361,6 +361,8 @@ data %>%
 
 
 
+# sentiment trend
+
 data_with_sentiments <- data %>%
   group_by(title) %>% 
   mutate(episode_num = group_indices()) %>% 

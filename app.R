@@ -115,7 +115,8 @@ with_names <- data %>%
 
 # for bigrams
 
-
+my_stops <- bind_rows(data.frame(word = stop_words$word), 
+                      data.frame(word = stopwords::stopwords(source = 'smart')))
 
 # SHINY
 
@@ -290,7 +291,32 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                    div(h6('(Give the page 5 sec to load)'), align = 'center'),
                                    h5("Running the TF-IDF on my dataset truly outlines the unique-to-given-person word. By adjusting a word's document-specific (person-specific) frequency with its total frequency throughout all documents (names), most personal words that belong to their (one and only) user can be found."),
                                    br(),
-                                   div(plotOutput('tfidf', height = '450px'), align = 'center'))
+                                   h5("Important note: I've conducted lemmatization for this task. Reasoning behind was, that for top words, I did want to see the 'forms' words were used, but for extracting the most personal words, I wanted to get them to their normalized forms, and then run the tf-idf algo to extract the truly personal tokens. For the lemmatization process I leveraged R's textstem library."),
+                                   br(),
+                                   div(plotOutput('tfidf', height = '450px', width = '650px'), align = 'center')),
+                           
+                           tabItem(tabName = "bigrams",
+                                   div(h2("Why only look at words when we can analyze expressions?"), align = 'center'),
+                                   div(h6('(Give the page 5 sec to load)'), align = 'center'),
+                                   h5("Bigrams (pairs of words) give very familiar results to an Office fan: Andy's famous nard dog, Dwight's farm's name, the company all of them work for, these expressions all come up when running analysis of pairs of words."),
+                                   br(),
+                                   div(plotOutput('bigrams', height = '450px', width = '650px'), align = 'center')),
+                           
+                           
+                           tabItem(tabName = "all_sent",
+                                   fluidRow(div(h2("senti"), align = 'center'),
+                                            br(),
+                                            div(h6('(Give the page 5 sec to load)'), align = 'center'),
+                                            br(),
+                                            column(width = 6,
+                                                   div(h3("all_sent"), align = 'center'),
+                                                   br()),
+                                                   #div(plotOutput('bigrams', height = '450px', width = '750px'), align = 'center')),
+                                            column(width = 6,
+                                                   div(h3("all_sent2"), align = 'center'),
+                                                   br(),
+                                                   hr())))
+                           
                 
                            )
                   )
@@ -500,6 +526,38 @@ server <- function(input, output) {
             theme_bw()
         
     })
+    
+    # 8. bigrams
+    
+    output$bigrams <- renderPlot({
+        
+        data %>% 
+            group_by(name) %>% 
+            unnest_tokens(bigram, text, token = 'ngrams', n = 2) %>% 
+            ungroup() %>% 
+            separate(bigram, c('word_1', 'word_2'), sep = ' ') %>%
+            filter((!word_1 %in% my_stops$word) & 
+                       (!word_2 %in% my_stops$word) & (word_1 != word_2)) %>% 
+            unite(bigram, word_1, word_2, sep = ' ') %>% 
+            filter(name %in% top12$name) %>% 
+            count(name, bigram, sort = T) %>% 
+            group_by(name) %>% 
+            top_n(6, wt = n) %>% 
+            ungroup() %>% 
+            mutate(name = as.factor(name),
+                   bigram = reorder_within(bigram, n, name)) %>% 
+            ggplot(aes(bigram, n, fill = name)) +
+            geom_col(show.legend = F) +
+            labs(title = "'Nard dog', 'Dunder Mifflin', 'Scrute Farms' and 'Party Planning (committee)' appear",
+                 subtitle = 'Showing top 6-10 bigrams (due to ties) by top 12 characters',
+                 x = NULL, y = NULL) +
+            coord_flip() +
+            scale_x_reordered() +
+            facet_wrap(~name, scales = 'free') +
+            theme_bw()
+        
+    })
+    
 
 }
 
