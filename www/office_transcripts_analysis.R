@@ -9,7 +9,7 @@ library(sentimentr)
 library(textstem)
 library(topicmodels)
 
-data <- readRDS("scraped_transcripts.RDS")
+data <- readRDS("www/scraped_transcripts.RDS")
 data$title <- as.character(data$title)
 data$transcript <- as.character(data$transcript)
 data$season <- as.integer(str_extract(data$title, "\\d{2}")) # season number is first 2 numbers
@@ -406,6 +406,8 @@ data_with_sentiments %>%
   theme_bw()
 
 
+
+
 # sentiment when talking to one another
 
 convo_sentiment <- data %>% 
@@ -495,11 +497,6 @@ visNetwork(nodes_2, edges_2,
 
 
 
-# ggplot(convo, aes(sentiment_score)) + 
-#   geom_histogram(binwidth = 5, color = 'blue', fill = 'skyblue') +
-#   theme_bw() + 
-#   labs(title = 'Distribution of total sentiment scores')
-
 ggplot(convo, aes(reorder(name, sentiment_score), sentiment_score)) + 
   geom_boxplot(show.legend = F, alpha = 0.75, outlier.stroke = T,
                fill = 'gray', color = 'black') +
@@ -563,8 +560,7 @@ ggplot(JimDwight, aes(season, sentiment_score, color = conversation, fill = conv
   geom_line(size = 1) + 
   geom_point(size = 1.75) +
   theme_bw() + 
-  labs(subtitle = "Jim and Dwight's relationship through the 9 seasons; sentiment score by summing up AFINN scores from words",
-       title = "Ending on a high note after ups and downs... Dwight nicest to Jim in last season (from AFINN sentiments)",
+  labs(title = "Jim-Dwight - summing up AFINN scores by word",
        x = 'season',
        y = 'total sentiment score') +
   scale_x_continuous(breaks = seq(1, 9, 1)) +
@@ -599,8 +595,7 @@ JimDwight_byline %>%
   geom_line(size = 1) + 
   geom_point(size = 1.75) +
   theme_bw() + 
-  labs(subtitle = "Jim and Dwight's relationship through the 9 seasons; sentiment score by summing up sentimentR scores on lines",
-       title = "Ending on a high note after ups and downs... Dwight nicest to Jim in last season (from sentimentR)",
+  labs(title = "Jim-Dwight - summing up sentimentR scores by lines",
        x = 'season',
        y = 'total sentiment score') +
   scale_x_continuous(breaks = seq(1, 9, 1)) +

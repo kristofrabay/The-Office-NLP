@@ -118,6 +118,123 @@ with_names <- data %>%
 my_stops <- bind_rows(data.frame(word = stop_words$word), 
                       data.frame(word = stopwords::stopwords(source = 'smart')))
 
+# for sentiment trend
+
+data_with_sentiments <- data %>%
+    group_by(title) %>% 
+    mutate(episode_num = group_indices()) %>% 
+    ungroup() %>% 
+    select(season, episode, episode_num, name, text) %>% 
+    mutate(sentiment = sentimentr::sentiment_by(text)$ave_sentiment)
+
+
+# for analyzing sentiment when talking to one another
+
+convo_sentiment <- data %>% 
+    select(name, text) %>% 
+    mutate(to = lead(name)) %>% 
+    group_by(name) %>% 
+    unnest_tokens(word, text) %>% 
+    ungroup() %>% 
+    anti_join(bind_rows(data.frame(word = stop_words$word), 
+                        data.frame(word = stopwords::stopwords(source = 'smart')),
+                        data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
+                        data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>%
+    filter((name %in% top12$name) & (to %in% top12$name) & (name != to)) %>% 
+    count(name, to, word, sort = T) %>% 
+    ungroup() %>% 
+    inner_join(get_sentiments(lexicon = 'afinn')) %>% 
+    mutate(sentiment_value = n * value) %>% 
+    group_by(name, to) %>% 
+    summarize(sentiment_score = sum(sentiment_value)) %>% 
+    ungroup() 
+
+convo_count <- data %>% 
+    select(name, text) %>% 
+    mutate(to = lead(name)) %>% 
+    group_by(name) %>% 
+    unnest_tokens(word, text) %>% 
+    ungroup() %>% 
+    anti_join(bind_rows(data.frame(word = stop_words$word), 
+                        data.frame(word = stopwords::stopwords(source = 'smart')),
+                        data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
+                        data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>%
+    filter((name %in% top12$name) & (to %in% top12$name) & (name != to)) %>% 
+    group_by(name, to) %>% 
+    summarize(count = n()) %>% 
+    ungroup()
+
+convo <- convo_sentiment %>% inner_join(convo_count, by = c('name', 'to'))
+
+
+# for network 2 (talking to each other - all relationships)
+
+nodes_2 <- data.frame(id = (convo %>% group_by(name) %>% summarize(count = sum(count)) %>% ungroup())$name,
+                      label = (convo %>% group_by(name) %>% summarize(count = sum(count)) %>% ungroup())$name,
+                      title = (convo %>% group_by(name) %>% summarize(count = sum(count)) %>% ungroup())$count,
+                      value = (convo %>% group_by(name) %>% summarize(count = sum(count)) %>% ungroup())$count,
+                      font.size = 30)
+
+edges_2 <- data.frame(from = convo$name,
+                      to = convo$to,
+                      title = convo$sentiment_score,
+                      color = ifelse(convo$sentiment_score < 0, 'red', 'lightgreen'),
+                      physics = T,
+                      arrows = c('to'),
+                      smooth = T)
+
+
+# for network 3 (talking to each other - top relationships with edge weights)
+
+edges_3 <- data.frame(from = convo$name,
+                      to = convo$to,
+                      value = convo$sentiment_score,
+                      title = convo$sentiment_score,
+                      color = ifelse(convo$sentiment_score < 0, 'red', 'lightgreen'),
+                      hidden = ifelse(convo$sentiment_score > -10 & 
+                                          convo$sentiment_score < 30, T, F),
+                      physics = T,
+                      arrows = c('to'),
+                      smooth = T)
+
+
+# for Dwight vs Jim
+
+JimDwight <- data %>% 
+    select(season, name, text) %>% 
+    mutate(to = lead(name)) %>% 
+    group_by(name) %>% 
+    unnest_tokens(word, text) %>% 
+    ungroup() %>% 
+    anti_join(bind_rows(data.frame(word = stop_words$word), 
+                        data.frame(word = stopwords::stopwords(source = 'smart')),
+                        data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
+                        data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>%
+    filter((name %in% c('Jim', 'Dwight')) & (to %in% c('Jim', 'Dwight')) & (name != to)) %>%
+    count(season, name, to, word) %>% 
+    ungroup() %>% 
+    inner_join(get_sentiments(lexicon = 'afinn')) %>% 
+    mutate(sentiment_value = n * value) %>% 
+    group_by(season, name, to) %>% 
+    summarize(sentiment_score = sum(sentiment_value)) %>% 
+    ungroup() %>% 
+    mutate(conversation = paste0(name, " to ", to))
+
+
+JimDwight_byline <- data %>% 
+    select(season, name, text) %>% 
+    mutate(to = lead(name)) %>% 
+    filter((name %in% c('Jim', 'Dwight')) & 
+               (to %in% c('Jim', 'Dwight')) &
+               (to != name)) %>% 
+    mutate(sentiment = sentimentr::sentiment_by(text)$ave_sentiment) %>% 
+    filter((sentiment != 0)) %>% 
+    select(season, name, to, sentiment)
+
+
+# for LDA
+
+
 # SHINY
 
 
@@ -143,14 +260,14 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                      sidebarMenu(menuItem("Bigrams", 
                                           tabName = 'bigrams',
                                           icon = icon('comments'))),
-                     sidebarMenu(menuItem("Sentiment on whole dataset", 
-                                          tabName = 'all_sent',
+                     sidebarMenu(menuItem("Top positive and negative words", 
+                                          tabName = 'posneg',
                                           icon = icon('theater-masks'))),
                      sidebarMenu(menuItem("Sentiment with seasonal trend", 
                                           tabName = 'trend_sent',
                                           icon = icon('history'))),
                      sidebarMenu(menuItem("Sentiments between all characters", 
-                                          tabName = 'by_char_sent',
+                                          tabName = 'between_sent',
                                           icon = icon('project-diagram'))),
                      sidebarMenu(menuItem("Jim & Dwight's sentiment trend", 
                                           tabName = 'jd',
@@ -303,25 +420,105 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                    div(plotOutput('bigrams', height = '450px', width = '650px'), align = 'center')),
                            
                            
-                           tabItem(tabName = "all_sent",
-                                   fluidRow(div(h2("senti"), align = 'center'),
-                                            br(),
+                           tabItem(tabName = "posneg",
+                                   fluidRow(div(h2("Looking at simple sentiment analysis results"), align = 'center'),
                                             div(h6('(Give the page 5 sec to load)'), align = 'center'),
                                             br(),
+                                            h3("I've decided to run sentiment scoring on the top characters in two separate ways: "),
+                                            tags$ol(tags$li("Assigning all meaningful words to positive and negative categories like the Loughran sentiment lexicon does"),
+                                                    tags$li("Assigning sentiment scores to all words by the AFINN scoring system, and multiplying word occurence with the score")),
+                                            br(),
                                             column(width = 6,
-                                                   div(h3("all_sent"), align = 'center'),
-                                                   br()),
-                                                   #div(plotOutput('bigrams', height = '450px', width = '750px'), align = 'center')),
-                                            column(width = 6,
-                                                   div(h3("all_sent2"), align = 'center'),
+                                                   div(h3("Most occurent positive and negative words"), align = 'center'),
                                                    br(),
-                                                   hr())))
+                                                   div(plotOutput('sentiment_posneg', height = '450px', width = '580px'), align = 'center'),
+                                                   br()),
+                                            column(width = 6,
+                                                   div(h3("Sentiment scores by multiplying AFINN with the times of occurence"), align = 'center'),
+                                                   br(),
+                                                   div(plotOutput('sentiment_afinn', height = '450px', width = '580px'), align = 'center'),
+                                                   br()),
+                                            br(),
+                                            h4("Interesting to see how using a sentiment scale like AFINN and multiplying word counts with their respective scores outlines the words that contribute the most positivity or negativity to a certain character's vocabulary"))
+                                    ),
+                           
+                           tabItem(tabName = "trend_sent",
+                                   fluidRow(div(h2("Trend of average personal per episode sentiments does not offer insights to feelings of characters"), align = 'center'),
+                                            div(h6('(Give the page 15-20 sec to load, sentimentR::sentiment_by needs to run to get scores per line)'), align = 'center'),
+                                            br(),
+                                            h5("I tried to find out if I can sort of track personal feelings and moods by running sentiment analysis per line with the help of the senitmentR package, and averaging meaningful (not equal to zero) lines on an episode level. After seeing no explainable and interpretable results from episode-aggregation I checked if averaging lines on season-levels may hint at something but the results remained somewhat disappointing."),
+                                            br(),
+                                            column(width = 6,
+                                                   div(h3("Timeline of sentiment changes per episode"), align = 'center'),
+                                                   br(),
+                                                   div(plotOutput('sentiment_episode', height = '450px', width = '580px'), align = 'center'),
+                                                   br()),
+                                            column(width = 6,
+                                                   div(h3("Timeline of sentiment changes per season"), align = 'center'),
+                                                   br(),
+                                                   div(plotOutput('sentiment_season', height = '450px', width = '580px'), align = 'center'),
+                                                   br()),
+                                            br(),
+                                            h4("Looking at people one-by-one and seeing if their average sentiment per episode may hint at something failed, but I quickly turned to analyzing sentiments when people were talking to other people, and the results got substantially more interesting. Take a look on the next page!"))), 
+                           
+                           
+                           tabItem(tabName = "between_sent",
+                                   div(h2("Who's nice to whom? And who's mean to whom? Exciting stuff to prove by NLP!"), align = 'center'),
+                                   div(h6('(Give the page 5 sec to load)'), align = 'center'),
+                                   h4("1. Let me just give an overview of the positivity and negativity between the top 12"),
+                                   h5("Jim is nice to everyone, Erin, Michael, Pam & Phyllis seem very nice as well. Angela, Darryl, Dwight and Oscar are all mean to around half of the other guys. Angela is nicest to Dwight, which is no surprice (wink wink), while meanest to Jim, which underlines thier 9 season long rivalry."),
+                                   br(),
+                                   div(plotOutput('sentiment_between', height = '450px', width = '750px'), align = 'center'),
+                                   h4("2. Let's visualize the above plot in a network!"),
+                                   br(),
+                                   div(visNetworkOutput('sentiment_network_all'), align = 'center'),
+                                   br(),
+                                   br(),
+                                   br(),
+                                   br(),
+                                   br(),
+                                   br(),
+                                   h5("I also want to highlight the 'strength' of the niceness and meanness on the edges, but keeping all edges would make the network uninterpretable, so I'll stick to a minimum and maximum threshold. I'm dropping relationships with sentiment scores between -10 and +30, which seemed logical to me based on the distribution. This range seems to contain 'normal' relatoinships, not the strong ones I want to emphasize."),
+                                   br(),
+                                   div(plotOutput('sent_dist_to_back_nw3', height = '350px', width = '600px'), align = 'center'),
+                                   br(),
+                                   h4("3. Keeping 'strongest' (either more negative or more positive) relationships in the network"),
+                                   br(),
+                                   div(visNetworkOutput('sentiment_network_top'), align = 'center'),
+                                   br(),
+                                   br(),
+                                   br(),
+                                   br(),
+                                   br(),
+                                   br(),
+                                   br(),
+                                   hr()),
+                           
+                           tabItem(tabName = "jd",
+                                   fluidRow(div(h2("Jim and Dwight DO end their relationship on a higher note"), align = 'center'),
+                                            div(h6('(Give the page 10 sec to load)'), align = 'center'),
+                                            br(),
+                                            column(width = 6,
+                                                   div(h3("Using words' AFINN scores and frequencies"), align = 'center'),
+                                                   br(),
+                                                   div(plotOutput('jd_afinn', height = '450px', width = '580px'), align = 'center'),
+                                                   br()),
+                                            column(width = 6,
+                                                   div(h3("Leveraging sentimentR run by line and summing up score"), align = 'center'),
+                                                   br(),
+                                                   div(plotOutput('jd_lines', height = '450px', width = '580px'), align = 'center'),
+                                                   br()),
+                                            br(),
+                                            h3("The tendecies are much alike, so the patterns that AFINN and sentimentR give seem to be valid: although Jim used to be nicer to Dwight on average, Dwight started easing up on Jim and the two ended the series being great friends who don't tease each other any more.")))
+                           
+                           
+                           
+                        )
+            )
+)
                            
                 
-                           )
-                  )
-    
-)
+  
 
 
 server <- function(input, output) {
@@ -555,6 +752,246 @@ server <- function(input, output) {
             scale_x_reordered() +
             facet_wrap(~name, scales = 'free') +
             theme_bw()
+        
+    })
+    
+    # 9. sentiment count (pos / neg)
+    
+    output$sentiment_posneg <- renderPlot({
+        
+        data %>% 
+            group_by(name) %>% 
+            unnest_tokens(word, text) %>% 
+            ungroup() %>% 
+            mutate(word = lemmatize_words(word)) %>% 
+            anti_join(bind_rows(data.frame(word = stop_words$word), 
+                                data.frame(word = stopwords::stopwords(source = 'smart')),
+                                data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
+                                data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>% 
+            inner_join(sentiments) %>% 
+            count(name, word, sentiment, sort = T) %>% 
+            ungroup() %>% 
+            filter(name %in% top12$name) %>% 
+            group_by(name, sentiment) %>% 
+            top_n(5, wt = n) %>% 
+            ungroup() %>% 
+            mutate(n = ifelse(sentiment == 'positive', n, -n)) %>% 
+            mutate(name = as.factor(name),
+                   word = reorder_within(word, n, name)) %>% 
+            ggplot(aes(word, n, fill = sentiment)) +
+            geom_col(show.legend = F) +
+            labs(title = 'Top positive words are used more frequently on average than top negative words',
+                 subtitle = "Top positive and negative words by each character",
+                 x = NULL, y = NULL) +
+            coord_flip() +
+            scale_x_reordered() +
+            facet_wrap(~name, scales = 'free') +
+            theme_bw()
+        
+    })
+    
+    # 10. sentiment value (AFINN * count)
+    
+    output$sentiment_afinn <- renderPlot({
+        
+        data %>% 
+            group_by(name) %>% 
+            unnest_tokens(word, text) %>% 
+            ungroup() %>% 
+            mutate(word = lemmatize_words(word)) %>% 
+            anti_join(bind_rows(data.frame(word = stop_words$word), 
+                                data.frame(word = stopwords::stopwords(source = 'smart')),
+                                data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
+                                data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>% 
+            count(name, word, sort = T) %>% 
+            ungroup() %>% 
+            filter(name %in% top12$name) %>% 
+            inner_join(get_sentiments(lexicon = 'afinn')) %>% 
+            mutate(sentiment_value = n * value) %>% 
+            group_by(name) %>% 
+            top_n(10, wt = abs(sentiment_value)) %>% 
+            ungroup() %>% 
+            mutate(sentiment = ifelse(value < 0, 'negative', 'positive'),
+                   name = as.factor(name),
+                   word = reorder_within(word, sentiment_value, name)) %>% 
+            ggplot(aes(word, sentiment_value, fill = sentiment)) +
+            geom_col(show.legend = F) +
+            labs(title = "Angela, Darryl & Dwight seem to 'contribute' most negativity to their languages",
+                 subtitle = "Using AFINN scores and multiplying them by word counts by person",
+                 x = NULL, y = 'Contributed sentiment score (score * count)') +
+            coord_flip() +
+            scale_x_reordered() +
+            facet_wrap(~name, scales = 'free') +
+            theme_bw()
+        
+    })
+    
+    
+    # 11. sentiment trend by episode
+    
+    output$sentiment_episode <- renderPlot({
+        
+        data_with_sentiments %>% 
+            filter((sentiment != 0) & (name %in% top12$name)) %>% 
+            group_by(episode_num, name) %>% 
+            filter((sentiment != min(sentiment)) & (sentiment != max(sentiment))) %>% # taking the min and max out of all episodes (usually errors, like whoa whoa whoa etc...)
+            summarize(min_sentiment = min(sentiment),
+                      max_sentiment = max(sentiment),
+                      avg_sentiment = mean(sentiment)) %>% # least and most positive episodes taken after minmax deletions
+            ungroup() %>% 
+            mutate(name = as.factor(name)) %>% 
+            ggplot(aes(x = episode_num), fill = 'blue', color = 'blue') +
+            geom_line(aes(y = avg_sentiment), show.legend = F, alpha = 0.5) +
+            geom_ribbon(aes(ymin = min_sentiment, ymax = max_sentiment), fill = 'skyblue', alpha = 1/3, show.legend = F, color = NA) +
+            labs(title = "Sentiment trend analysis by person by episode does not offer insights: lots of volatility",
+                 subtitle = "Sentiments come from each line, aggregated on episode level; blue range represents min-max range",
+                 x = '# of episode', y = NULL) +
+            facet_wrap(~name) +
+            theme_bw()
+        
+    })
+    
+    
+    # 12. sentiment trend by season
+    
+    
+    output$sentiment_season <- renderPlot({
+        
+        data_with_sentiments %>% 
+            filter((sentiment != 0) & (name %in% top12$name)) %>% 
+            group_by(season, name) %>% 
+            summarize(median_sentiment = median(sentiment)) %>% # least and most positive episodes taken after minmax deletions
+            ungroup() %>% 
+            mutate(name = as.factor(name)) %>% 
+            ggplot(aes(x = season), fill = 'blue', color = 'blue') +
+            geom_line(aes(y = median_sentiment), show.legend = F, alpha = 0.5) +
+            geom_point(aes(y = median_sentiment), show.legend = F, color = 'blue', fill = 'blue') +
+            labs(title = "By-season trend may hint at Andy's firing, but no more insightful than by-episode trend",
+                 subtitle = "Sentiments come from each line, aggregated on season level",
+                 x = '# of season', y = NULL) +
+            scale_x_continuous(breaks = seq(1, 9, by = 1)) +
+            facet_wrap(~name) +
+            theme_bw()
+        
+    })
+    
+    
+    # 13. sentiment between people
+    
+    output$sentiment_between <- renderPlot({
+        
+        convo_sentiment %>% 
+            mutate(from = as.factor(name),
+                   to = as.factor(to),
+                   to = reorder_within(to, sentiment_score, from),
+                   sentiment = ifelse(sentiment_score < 0, 'negative', 'positive')) %>% 
+            ggplot(aes(to, sentiment_score, fill = sentiment, color = sentiment)) +
+            geom_col(show.legend = F, width = 2/3) +
+            labs(title = "Pam & Jim are mutually very nice to one other, Dwight-to-Jim is negative, Jim-to-Dwight is positive",
+                 subtitle = "Using AFINN scores to calculate sentiments of conversations; Box labels represent the 'from', y axis the 'to'",
+                 x = 'Talking to', y = 'Contributed sentiment score (score * count)') +
+            coord_flip() +
+            scale_x_reordered() +
+            facet_wrap(~name, scales = 'free') +
+            theme_bw()
+        
+    })
+    
+    
+    # 14. sent between people - network - all
+    
+    output$sentiment_network_all <- renderVisNetwork({
+        
+        visNetwork(nodes_2, edges_2, 
+                   main = "Everyone's nice to Darryl, Jim's nice to everyone, Oscar & Dwight are quite mean", 
+                   submain = 'Sentiments between top characters - by sign; node # represents meaningful unqiue words spoken',
+                   footer = 'Select a node to focus on one person only',
+                   height = '400px') %>% 
+            visOptions(highlightNearest = list(enabled = T, degree = 0,
+                                               labelOnly = T, hover = T), 
+                       nodesIdSelection = T) %>% 
+            visIgraphLayout(layout = "layout_with_fr", randomSeed = 1000) %>%
+            visEdges(arrowStrikethrough = F,
+                     arrows =list(to = list(enabled = T, scaleFactor = 1))) %>% 
+            visInteraction(hover = T)
+        
+    })
+    
+    
+    # 15. sent score distribution to back up threshold for network 3
+    
+    output$sent_dist_to_back_nw3 <- renderPlot({
+        
+        ggplot(convo, aes(reorder(name, sentiment_score), sentiment_score)) + 
+            geom_boxplot(show.legend = F, alpha = 0.75, outlier.stroke = T,
+                         fill = 'gray', color = 'black') +
+            geom_hline(yintercept = median(convo$sentiment_score), size = 1) +
+            theme_bw() + 
+            labs(title = 'Distribution of total sentiment scores by person',
+                 subtitle = 'Vertical line represent median sentiment score') +
+            scale_y_continuous(breaks = seq(-130, 350, 20)) +
+            coord_flip()
+        
+    })
+    
+    
+    # 16. sent between people - network - top
+    
+    output$sentiment_network_top <- renderVisNetwork({
+        
+        visNetwork(nodes_2, edges_3, 
+                   main = "Jim & Pam clearly have the most positive relationship", 
+                   submain = 'Showing most negative and most positive relationships; node # represents meaningful unqiue words spoken',
+                   footer = 'Select a node to focus on one person only',
+                   height = '400px') %>% 
+            visOptions(highlightNearest = list(enabled = T, degree = 0,
+                                               labelOnly = T, hover = T), 
+                       nodesIdSelection = T) %>% 
+            visIgraphLayout(layout = "layout_with_fr", randomSeed = 1000) %>%
+            visEdges(arrowStrikethrough = T,
+                     arrows =list(to = list(enabled = T, scaleFactor = 1))) %>% 
+            visInteraction(hover = T)
+        
+    })
+    
+    # 17. Jim-Dwight AFINN by words
+    
+    output$jd_afinn <- renderPlot({
+        
+        ggplot(JimDwight, aes(season, sentiment_score, color = conversation, fill = conversation)) + 
+            geom_line(size = 1) + 
+            geom_point(size = 1.75) +
+            theme_bw() + 
+            labs(title = "Jim-Dwight - calculating with AFINN scores by word",
+                 x = 'season',
+                 y = 'total sentiment score') +
+            scale_x_continuous(breaks = seq(1, 9, 1)) +
+            theme(legend.key = element_blank(),
+                  legend.background=element_blank(),
+                  legend.position=c(0.8, 0.85))
+        
+    })
+    
+    # 18. Jim-Dwight sentimentR by lines
+    
+    output$jd_lines <- renderPlot({
+        
+        JimDwight_byline %>% 
+            group_by(season, name, to) %>% 
+            summarize(ave_sent = mean(sentiment),
+                      sum_sent = sum(sentiment)) %>% 
+            mutate(conversation = paste0(name, " to ", to)) %>% 
+            ggplot(aes(season, sum_sent, color = conversation, fill = conversation)) + 
+            geom_line(size = 1) + 
+            geom_point(size = 1.75) +
+            theme_bw() + 
+            labs(title = "Jim-Dwight - summing up sentimentR scores by lines",
+                 x = 'season',
+                 y = 'total sentiment score') +
+            scale_x_continuous(breaks = seq(1, 9, 1)) +
+            theme(legend.key = element_blank(),
+                  legend.background=element_blank(),
+                  legend.position=c(0.85, 0.15))
         
     })
     
