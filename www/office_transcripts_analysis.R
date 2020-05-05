@@ -605,9 +605,12 @@ JimDwight_byline %>%
 
 
 
+
+# TODO from here
+
 # topics modeling
 
-m <- data %>% 
+words_top_12 <- data %>% 
   group_by(name) %>% 
   unnest_tokens(word, text) %>% 
   ungroup() %>% 
@@ -621,16 +624,16 @@ m <- data %>%
   count(name, word, sort = T) %>% 
   ungroup()
 
-m_dtm <- m %>% cast_dtm(name, word, n)
+words_top_12_dtm <- words_top_12 %>% cast_dtm(name, word, n)
 
 
 # 12 clusters 
 
-m_lda <- m_dtm %>% LDA(k = 12, control = list(seed = 8080))
+words_top_12_dtm_lda <- words_top_12_dtm %>% LDA(k = 12, control = list(seed = 8080))
 
-m_lda_gammas <- tidy(m_lda, matrix = 'gamma')
+words_top_12_dtm_lda_gammas <- tidy(words_top_12_dtm_lda, matrix = 'gamma')
 
-m_lda_gammas %>%  
+words_top_12_dtm_lda_gammas %>%  
   rename('name' = 'document') %>% 
   mutate(topic = as.factor(topic),
          name = as.factor(name)) %>% 
@@ -644,13 +647,13 @@ m_lda_gammas %>%
   theme_bw()
 
 
-# limited # of topics
+# 3 clusters
 
-lda <- m_dtm %>% LDA(k = 3, control = list(seed = 123))
+words_top_12_dtm_lda <- words_top_12_dtm %>% LDA(k = 3, control = list(seed = 123))
 
-lda_betas <- tidy(lda, matrix = 'beta')
+words_top_12_dtm_lda_betas <- tidy(words_top_12_dtm_lda, matrix = 'beta')
 
-lda_betas %>% 
+words_top_12_dtm_lda_betas %>% 
   group_by(topic) %>% 
   top_n(30, beta) %>% 
   ungroup() %>% 
@@ -664,9 +667,9 @@ lda_betas %>%
   theme_bw()
 
 
-lda_gammas <- tidy(lda, matrix = 'gamma')
+words_top_12_dtm_lda_gammas <- tidy(words_top_12_dtm_lda, matrix = 'gamma')
 
-lda_gammas %>%  
+words_top_12_dtm_lda_gammas %>%  
   rename('name' = 'document') %>% 
   mutate(topic = as.factor(topic),
          name = as.factor(name)) %>% 
@@ -680,7 +683,8 @@ lda_gammas %>%
   theme_bw()
 
 
-# only dwight
+
+# only 1 person
 # has multiple topics (Job, College, Lovelife, etc...)
 
 

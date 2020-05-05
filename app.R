@@ -275,9 +275,9 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                      sidebarMenu(menuItem("Topic modeling with LDA", 
                                           tabName = 'lda',
                                           icon = icon('chalkboard-teacher'))),
-                     sidebarMenu(menuItem("Takeaways", 
-                                          tabName = 'close',
-                                          icon = icon('bullseye')))),
+                     sidebarMenu(menuItem("Summary on hypotheses, takeaways", 
+                                          tabName = 'summary',
+                                          icon = icon('sigma')))),
     
     dashboardBody(tabItems(tabItem(tabName = "motivation",
                                    fluidRow(div(h2('Why I chose this project'), align = 'center'),
@@ -501,15 +501,15 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                             column(width = 6,
                                                    div(h3("Using words' AFINN scores and frequencies"), align = 'center'),
                                                    br(),
-                                                   div(plotOutput('jd_afinn', height = '450px', width = '580px'), align = 'center'),
+                                                   div(plotOutput('jd_afinn', height = '350px', width = '580px'), align = 'center'),
                                                    br()),
                                             column(width = 6,
                                                    div(h3("Leveraging sentimentR run by line and summing up score"), align = 'center'),
                                                    br(),
-                                                   div(plotOutput('jd_lines', height = '450px', width = '580px'), align = 'center'),
+                                                   div(plotOutput('jd_lines', height = '350px', width = '580px'), align = 'center'),
                                                    br()),
                                             br(),
-                                            h3("The tendecies are much alike, so the patterns that AFINN and sentimentR give seem to be valid: although Jim used to be nicer to Dwight on average, Dwight started easing up on Jim and the two ended the series being great friends who don't tease each other any more.")))
+                                            h4("The tendecies are much alike, so the patterns that AFINN and sentimentR give seem to be valid: although Jim used to be nicer to Dwight on average, Dwight started easing up on Jim and the two ended the series being great friends who don't tease each other any more.")))
                            
                            
                            
@@ -994,6 +994,12 @@ server <- function(input, output) {
                   legend.position=c(0.85, 0.15))
         
     })
+    
+    
+    # 19. 12 clusters from LDA
+    # 20. 2 clusters by people of choice - betas & log diff
+    # 21. 2 clusters by people of choice - betas & top words / topic
+    # 20, 21 <- reactive objects to be created, choose from list
     
 
 }
