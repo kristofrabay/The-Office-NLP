@@ -15,7 +15,7 @@ library(wordcloud)
 
 # CODE
 
-data <- readRDS("../scraped_transcripts.RDS")
+data <- readRDS("www/scraped_transcripts.RDS")
 data$title <- as.character(data$title)
 data$transcript <- as.character(data$transcript)
 data$season <- as.integer(str_extract(data$title, "\\d{2}")) # season number is first 2 numbers
@@ -473,7 +473,7 @@ server <- function(input, output) {
                           freq = (with_names %>% filter(name ==input$wordcloud_person))$n, 
                           min.freq = input$wordcloud_min, 
                           max.words = input$wordcloud_max, 
-                          colors = brewer.pal(10, 'Set1'))
+                          colors = brewer.pal(9, 'Set1'))
                 
             })
             
@@ -489,7 +489,7 @@ server <- function(input, output) {
                           freq = (without_names %>% filter(name ==input$wordcloud_person))$n, 
                           min.freq = input$wordcloud_min, 
                           max.words = input$wordcloud_max, 
-                          colors = brewer.pal(10, 'Set1'))
+                          colors = brewer.pal(9, 'Set1'))
                 
             })
         }
