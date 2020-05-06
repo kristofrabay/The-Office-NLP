@@ -640,7 +640,7 @@ words_top_12_dtm_lda_gammas %>%
   ggplot(aes(topic, gamma, fill = name)) + 
   geom_point(show.legend = F, color = 'black', shape = 8) +
   facet_wrap(~name, scales = 'free') + 
-  labs(title = "Only Michael & Dwight have 'multiple vocabularies'",
+  labs(title = "Only Michael & Dwight don't have 'one clear vocabulary'",
        subtitle = 'LDA clustering outcome: some people use very similar language (i.e.: Angela, Oscar & Ryan)',
        x = '12 topics (clusters) from LDA algo',
        y = '% of being assigned to one cluster') +
@@ -648,39 +648,39 @@ words_top_12_dtm_lda_gammas %>%
 
 
 # 3 clusters
-
-words_top_12_dtm_lda <- words_top_12_dtm %>% LDA(k = 3, control = list(seed = 123))
-
-words_top_12_dtm_lda_betas <- tidy(words_top_12_dtm_lda, matrix = 'beta')
-
-words_top_12_dtm_lda_betas %>% 
-  group_by(topic) %>% 
-  top_n(30, beta) %>% 
-  ungroup() %>% 
-  mutate(term = as.factor(term),
-         term = reorder_within(term, beta, topic)) %>% 
-  ggplot(aes(term, beta, fill = factor(topic))) + 
-  geom_col(show.legend = F, width = 2/3) +
-  facet_wrap(~topic, scales = 'free') + 
-  coord_flip() + 
-  scale_x_reordered() +
-  theme_bw()
-
-
-words_top_12_dtm_lda_gammas <- tidy(words_top_12_dtm_lda, matrix = 'gamma')
-
-words_top_12_dtm_lda_gammas %>%  
-  rename('name' = 'document') %>% 
-  mutate(topic = as.factor(topic),
-         name = as.factor(name)) %>% 
-  ggplot(aes(topic, gamma, fill = name)) + 
-  geom_point(show.legend = F, color = 'black', shape = 8) +
-  facet_wrap(~name, scales = 'free') + 
-  labs(title = "Only Michael & Dwight have 'multiple vocabularies'",
-       subtitle = 'LDA clustering outcome: some people use very similar language (i.e.: Angela, Oscar & Ryan)',
-       x = '12 topics (clusters) from LDA algo',
-       y = '% of being assigned to one cluster') +
-  theme_bw()
+# 
+# words_top_12_dtm_lda_3 <- words_top_12_dtm %>% LDA(k = 3, control = list(seed = 123))
+# 
+# words_top_12_dtm_lda_3_betas <- tidy(words_top_12_dtm_lda, matrix = 'beta')
+# 
+# words_top_12_dtm_lda_3_betas %>% 
+#   group_by(topic) %>% 
+#   top_n(30, beta) %>% 
+#   ungroup() %>% 
+#   mutate(term = as.factor(term),
+#          term = reorder_within(term, beta, topic)) %>% 
+#   ggplot(aes(term, beta, fill = factor(topic))) + 
+#   geom_col(show.legend = F, width = 2/3) +
+#   facet_wrap(~topic, scales = 'free') + 
+#   coord_flip() + 
+#   scale_x_reordered() +
+#   theme_bw()
+# 
+# 
+# words_top_12_dtm_lda_3_gammas <- tidy(words_top_12_dtm_lda, matrix = 'gamma')
+# 
+# words_top_12_dtm_lda_3_gammas %>%  
+#   rename('name' = 'document') %>% 
+#   mutate(topic = as.factor(topic),
+#          name = as.factor(name)) %>% 
+#   ggplot(aes(topic, gamma, fill = name)) + 
+#   geom_point(show.legend = F, color = 'black', shape = 8) +
+#   facet_wrap(~name, scales = 'free') + 
+#   labs(title = "Only Michael & Dwight have 'multiple vocabularies'",
+#        subtitle = 'LDA clustering outcome: some people use very similar language (i.e.: Angela, Oscar & Ryan)',
+#        x = '12 topics (clusters) from LDA algo',
+#        y = '% of being assigned to one cluster') +
+#   theme_bw()
 
 
 

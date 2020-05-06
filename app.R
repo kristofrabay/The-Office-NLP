@@ -234,6 +234,28 @@ JimDwight_byline <- data %>%
 
 # for LDA
 
+# 12 clusters
+
+words_top_12 <- data %>% 
+  group_by(name) %>% 
+  unnest_tokens(word, text) %>% 
+  ungroup() %>% 
+  filter(name %in% top12$name) %>% 
+  select(name, word) %>% 
+  mutate(word = lemmatize_words(word)) %>% 
+  anti_join(bind_rows(data.frame(word = stop_words$word), 
+                      data.frame(word = stopwords::stopwords(source = 'smart')),
+                      data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
+                      data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>% 
+  count(name, word, sort = T) %>% 
+  ungroup()
+
+words_top_12_dtm <- words_top_12 %>% cast_dtm(name, word, n)
+
+words_top_12_dtm_lda <- words_top_12_dtm %>% LDA(k = 12, control = list(seed = 8080))
+
+words_top_12_dtm_lda_gammas <- tidy(words_top_12_dtm_lda, matrix = 'gamma')
+
 
 # SHINY
 
@@ -277,7 +299,7 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                           icon = icon('chalkboard-teacher'))),
                      sidebarMenu(menuItem("Summary on hypotheses, takeaways", 
                                           tabName = 'summary',
-                                          icon = icon('sigma')))),
+                                          icon = icon('bullseye-arrow')))),
     
     dashboardBody(tabItems(tabItem(tabName = "motivation",
                                    fluidRow(div(h2('Why I chose this project'), align = 'center'),
@@ -509,10 +531,33 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                                    div(plotOutput('jd_lines', height = '350px', width = '580px'), align = 'center'),
                                                    br()),
                                             br(),
-                                            h4("The tendecies are much alike, so the patterns that AFINN and sentimentR give seem to be valid: although Jim used to be nicer to Dwight on average, Dwight started easing up on Jim and the two ended the series being great friends who don't tease each other any more.")))
+                                            h4("The tendecies are much alike, so the patterns that AFINN and sentimentR give seem to be valid: although Jim used to be nicer to Dwight on average, Dwight started easing up on Jim and the two ended the series being great friends who don't tease each other any more."))),
                            
                            
-                           
+                           tabItem(tabName = "lda",
+                                   div(h2("LDA topic analysis helps identify people with similar vocabularies, but actual topics are not extractable"), align = 'center'),
+                                   div(h6('(Give the page 5 sec to load)'), align = 'center'),
+                                   h4("1. Creating 12 clusters (topics) for the top 12 people to find similar speakers"),
+                                   h5("Jim is nice to everyone, Erin, Michael, Pam & Phyllis seem very nice as well. Angela, Darryl, Dwight and Oscar are all mean to around half of the other guys. Angela is nicest to Dwight, which is no surprice (wink wink), while meanest to Jim, which underlines thier 9 season long rivalry."),
+                                   br(),
+                                   div(plotOutput('lda_12', height = '450px', width = '750px'), align = 'center'),
+                                   br(),
+                                   h4("2. Arbitrarily choosing a person, and exploring their two topics"),
+                                   selectInput('lda_person', 
+                                               "Choose a person whose 2 topics you'd like to explore", width = '400px',
+                                               choices = top30$name, selected = 'Jan'),
+                                   hr(),
+                                   fluidRow(column(width = 6,
+                                                   h5("A: Most differing words based in log differences in topic betas"),
+                                                   br(),
+                                                   div(plotOutput('lda_logdiff', height = '450px', width = '580px'), align = 'center'),
+                                                   br()),
+                                            column(width = 6,
+                                                   h5("B: Top words in each topic"),
+                                                   br(),
+                                                   div(plotOutput('lda_top_words', height = '450px', width = '580px'), align = 'center'),
+                                                   br()))
+                                  )
                         )
             )
 )
@@ -997,9 +1042,99 @@ server <- function(input, output) {
     
     
     # 19. 12 clusters from LDA
-    # 20. 2 clusters by people of choice - betas & log diff
-    # 21. 2 clusters by people of choice - betas & top words / topic
-    # 20, 21 <- reactive objects to be created, choose from list
+    
+    output$lda_12 <- renderPlot({
+      
+      words_top_12_dtm_lda_gammas %>%  
+        rename('name' = 'document') %>% 
+        mutate(topic = as.factor(topic),
+               name = as.factor(name)) %>% 
+        ggplot(aes(topic, gamma, fill = name)) + 
+        geom_point(show.legend = F, color = 'black', shape = 8) +
+        facet_wrap(~name, scales = 'free') + 
+        labs(title = "Only Michael & Dwight don't have 'one clear vocabulary'",
+             subtitle = 'LDA clustering outcome: some people use very similar language (i.e.: Angela, Oscar & Ryan)',
+             x = '12 topics (clusters) from LDA algo',
+             y = '% of being assigned to one cluster') +
+        theme_bw()
+      
+    })
+    
+    # 20. reactive df by chosen name
+    
+    lda_person_df <- reactive({
+      
+      x <- data %>% 
+        group_by(name) %>% 
+        unnest_tokens(word, text) %>% 
+        ungroup() %>% 
+        filter(name == input$lda_person) %>% 
+        select(name, word) %>% 
+        mutate(word = lemmatize_words(word)) %>% 
+        anti_join(bind_rows(data.frame(word = stop_words$word), 
+                            data.frame(word = stopwords::stopwords(source = 'smart')),
+                            data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
+                            data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>% 
+        count(name, word, sort = T) %>% 
+        ungroup()
+      
+      x_dtm <- x %>% cast_dtm(name, word, n)
+      
+      x_lda <- x_dtm %>% LDA(k = 2, control = list(seed = 123))
+      
+      x_lda_betas <- tidy(x_lda, matrix = 'beta')
+      
+      return(x_lda_betas)
+      
+    })
+    
+    # 21. 2 clusters by people of choice - betas & log diff
+    
+    output$lda_logdiff <- renderPlot({
+      
+      lda_person_df() %>% 
+        mutate(topic = paste0('topic_', topic)) %>% 
+        spread(topic, beta) %>% 
+        mutate(log_ratio = log2(topic_2 / topic_1),
+               pos_neg = ifelse(log_ratio < 0, 'neg', 'pos')) %>% 
+        group_by(pos_neg) %>% 
+        top_n(15, abs(log_ratio)) %>% 
+        ungroup() %>% 
+        mutate(term = as.factor(term),
+               term = reorder(term, log_ratio)) %>% 
+        ggplot(aes(term, log_ratio, fill = pos_neg, color = pos_neg)) + 
+        geom_col(show.legend = F, width = 2/3) +
+        coord_flip() +
+        labs(title = 'Largest beta-differences somewhat outline two topics',
+             subtitle = paste0('Running LDA on ', input$lda_person, "'s words"),
+             x = 'Top terms',
+             y = 'Log-ratio') +
+        theme_bw()
+      
+    })
+    
+    # 22. 2 clusters by people of choice - betas & top words / topic
+    
+    output$lda_top_words <- renderPlot({
+      
+      lda_person_df() %>% 
+        group_by(topic) %>% 
+        top_n(30, beta) %>% 
+        ungroup() %>% 
+        mutate(term = as.factor(term),
+               term = reorder_within(term, beta, topic)) %>% 
+        ggplot(aes(term, beta, fill = factor(topic))) + 
+        geom_col(show.legend = F, width = 2/3) +
+        facet_wrap(~topic, scales = 'free') + 
+        coord_flip() + 
+        scale_x_reordered() +
+        labs(title = paste0('Top words for 2 clusters created for ', input$lda_person),
+             subtitle = paste0('Running LDA on ', input$lda_person, "'s words"),
+             x = 'Top terms',
+             y = 'Beta') +
+        theme_bw()
+      
+    })
     
 
 }
