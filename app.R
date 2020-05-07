@@ -299,7 +299,7 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                           icon = icon('chalkboard-teacher'))),
                      sidebarMenu(menuItem("Summary on hypotheses, takeaways", 
                                           tabName = 'summary',
-                                          icon = icon('bullseye-arrow')))),
+                                          icon = icon('bullseye')))),
     
     dashboardBody(tabItems(tabItem(tabName = "motivation",
                                    fluidRow(div(h2('Why I chose this project'), align = 'center'),
@@ -322,10 +322,11 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                             column(width = 4,
                                                    h3("What my hypotheses are"),
                                                    br(),
-                                                   tags$ol(tags$li("Sentiment trend follows characters' happiness and sadness (falling in love, breaking up, getting fired, etc...)"),
-                                                           tags$li("Jim and Dwight's relationship got better towards the end of the show"),
+                                                   tags$ol(tags$li("Hobbies and personal activities can be extracted by tf-idf"),
+                                                           tags$li("Sentiment trend follows characters' happiness and sadness (falling in love, breaking up, getting fired, etc...)"),
+                                                           tags$li("Angela is the meanest (most negative) person BUT nicest to Dwight..."),
                                                            tags$li("Jim and Pam's relationship is most mutually positive"),
-                                                           tags$li("Hobbies and personal activities can be extracted by tf-idf"),
+                                                           tags$li("Jim and Dwight's relationship got better towards the end of the show"),
                                                            tags$li("LDA can cluster topics into two groups (business and personal / fun)"))),
                                             column(width = 4,
                                                    h3("What I'll learn as a data scientist"),
@@ -383,21 +384,18 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                    fluidRow(div(h2("Tokenization - looking at top words (highest count) used by each character"), align = 'center'),
                                             div(h6('(Give the page 5 sec to load)'), align = 'center'),
                                             h5("As a first step to unnesting the lines to words, I got rid of lines that aren't 'spoken' but set an environment or help the viewer understand the situation. Such lines, like 'laughing histerically', 'humming', 'while eating' are all between [ and ] characters. With the help of '\\[(.*?)\\]' RegEx I can easily locate anything between [ and ]."),
-                                            h5("After that I unnested the lines and removed stopwords: (1) from the tidytext package, (2) the 'smart' dictionary from the stopwords package, (3) and words I found in the text that don't really carry any meaning, such as 'yeah', 'gonna', 'uh', 'alright', 'um', 'lot' and 'hey'. Results are under: "),
-                                            column(width = 6,
-                                                   h3('Unnesting lines and removing stop words show that mostly used words are names of other characters'),
-                                                   br(),
-                                                   div(plotOutput("top_words_by_people_plot", height = '450px', width = '550px'), align = 'center')),
-                                            column(width = 6,
-                                                   h3('Names occuring in top words gave me the idea to visualize conversation between the top 12'),
-                                                   br(),
-                                                   div(visNetworkOutput('top_words_by_people_network'), align = 'center'))
-                                   ),
-                                   
-                                   fluidRow( h3('With names removed, top words help identify each person'),
-                                             br(),
-                                             div(plotOutput('top_words_by_people_no_names', height = '450px', width = '600px'), align = 'center')),
-                                   
+                                            h5("After that I unnested the lines and removed stopwords: (1) from the tidytext package, (2) the 'smart' dictionary from the stopwords package, (3) and words I found in the text that don't really carry any meaning, such as 'yeah', 'gonna', 'uh', 'alright', 'um', 'lot' and 'hey'. Results are under: ")),
+                                   fluidRow(h3('Unnesting lines and removing stop words show that mostly used words are names of other characters'),
+                                            br(),
+                                            div(plotOutput("top_words_by_people_plot", height = '450px', width = '650px'), align = 'center'),
+                                            br()),
+                                   fluidRow(h3('Names occuring in top words gave me the idea to visualize conversation between the top 12'),
+                                            br(),
+                                            div(visNetworkOutput('top_words_by_people_network'), align = 'center'),
+                                            br()),
+                                   fluidRow(h3('With names removed, top words help identify each person'),
+                                            br(),
+                                            div(plotOutput('top_words_by_people_no_names', height = '450px', width = '650px'), align = 'center')),
                                    fluidRow(h3('Feel free to create WordClouds from the top words used by a chosen character'),
                                             br(),
                                             h5("I've included the top 30 people, so other familiar favorites' vocabularies can be looked at!"),
@@ -538,7 +536,7 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                    div(h2("LDA topic analysis helps identify people with similar vocabularies, but actual topics are not extractable"), align = 'center'),
                                    div(h6('(Give the page 5 sec to load)'), align = 'center'),
                                    h4("1. Creating 12 clusters (topics) for the top 12 people to find similar speakers"),
-                                   h5("Jim is nice to everyone, Erin, Michael, Pam & Phyllis seem very nice as well. Angela, Darryl, Dwight and Oscar are all mean to around half of the other guys. Angela is nicest to Dwight, which is no surprice (wink wink), while meanest to Jim, which underlines thier 9 season long rivalry."),
+                                   h5("Something to write here"),
                                    br(),
                                    div(plotOutput('lda_12', height = '450px', width = '750px'), align = 'center'),
                                    br(),
@@ -636,7 +634,7 @@ server <- function(input, output) {
             ggplot(aes(word, n, fill = name)) +
             geom_col(show.legend = F) +
             labs(title = 'Top words hint at who people converse with and who they are in a relationship with',
-                 subtitle = "Showing top 10 words by top 12 characters after removing usual stopwords + words like 'yeah'...",
+                 subtitle = "Showing top 10 words by top 12 characters after removing usual stopwords + words like 'yeah', 'um'...",
                  x = NULL, y = NULL) +
             coord_flip() +
             scale_x_reordered() +
@@ -948,7 +946,7 @@ server <- function(input, output) {
     output$sentiment_network_all <- renderVisNetwork({
         
         visNetwork(nodes_2, edges_2, 
-                   main = "Everyone's nice to Darryl, Jim's nice to everyone, Oscar & Dwight are quite mean", 
+                   main = "Everyone's nice to Darryl, Jim's nice to everyone, Oscar, Dwight & Angela are quite mean", 
                    submain = 'Sentiments between top characters - by sign; node # represents meaningful unqiue words spoken',
                    footer = 'Select a node to focus on one person only',
                    height = '400px') %>% 
@@ -993,7 +991,7 @@ server <- function(input, output) {
                                                labelOnly = T, hover = T), 
                        nodesIdSelection = T) %>% 
             visIgraphLayout(layout = "layout_with_fr", randomSeed = 1000) %>%
-            visEdges(arrowStrikethrough = T,
+            visEdges(arrowStrikethrough = F,
                      arrows =list(to = list(enabled = T, scaleFactor = 1))) %>% 
             visInteraction(hover = T)
         
@@ -1105,7 +1103,7 @@ server <- function(input, output) {
         ggplot(aes(term, log_ratio, fill = pos_neg, color = pos_neg)) + 
         geom_col(show.legend = F, width = 2/3) +
         coord_flip() +
-        labs(title = 'Largest beta-differences somewhat outline two topics',
+        labs(title = paste0('Largest beta differences for ', input$lda_person),
              subtitle = paste0('Running LDA on ', input$lda_person, "'s words"),
              x = 'Top terms',
              y = 'Log-ratio') +
