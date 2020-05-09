@@ -5,6 +5,7 @@ library(stringr)
 library(tidytext)
 library(plotly)
 library(data.table)
+library(DT)
 library(visNetwork)
 library(igraph)
 library(sentimentr)
@@ -346,7 +347,7 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                                            tags$li("Familiarizing myself with the LDA ML algo for topic extraction"),
                                                            tags$li("R libraries (tidytext, stringr, visNetwork, sentimentR, textstem, topicmodels)"),
                                                            tags$li("Regular Expressions"),
-                                                           tags$li("First every Shiny app!"))))),
+                                                           tags$li("First ever Shiny app!"))))),
                            
                            
                            tabItem(tabName = "explore",
@@ -396,14 +397,18 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                    fluidRow(h3('Unnesting lines and removing stop words show that mostly used words are names of other characters'),
                                             br(),
                                             div(plotOutput("top_words_by_people_plot", height = '450px', width = '650px'), align = 'center'),
+                                            h5("When talking to one another, people usually call the other by their name to get their attention. This is what seems to be the case here. For example, Dwight sits across Jim so the conversation there is logical, however he also talks often to Michael, hence the top 2 words for Dwights are Michael and Jim. It's also apparent that people use their own names as well. That's because they're mostly salesmen who need to introduce themselves over the phone."),
                                             br()),
                                    fluidRow(h3('Names occuring in top words gave me the idea to visualize conversation between the top 12'),
                                             br(),
                                             div(visNetworkOutput('top_words_by_people_network'), align = 'center'),
-                                            br()),
-                                   fluidRow(h3('With names removed, top words help identify each person'),
+                                            h5("The fact that I was reading first names in the top n word lists of all characters made me realize that this was the perfect opportunity to create my first ever network. I used the visNetwork package to create a graph with nodes representing the top 12 characters I've chosen, and edges meaning the frequency of conversations between them. To create the 'from' and 'to' variables I chose a simple approach. I took my dataframe and shifted the column indicating the person who speaks the line by one, so I saw who spoke the line and to whom it was intended."),
                                             br(),
-                                            div(plotOutput('top_words_by_people_no_names', height = '450px', width = '650px'), align = 'center')),
+                                            ),
+                                   fluidRow(h3('With names removed from spoken words list, top words help identify most people'),
+                                            br(),
+                                            div(plotOutput('top_words_by_people_no_names', height = '450px', width = '650px'), align = 'center'),
+                                            h5("What I mean by this is the following: Angela's party refers to the party planning committee she ran, Darryl's Mike is the nickname he uses to turn to Michael, etc... This is far from perfect as not everyone is clearly identifiable by the top words, an issue expression (bigram) analysis and TF-IDF will take care of for us.")),
                                    fluidRow(h3('Feel free to create WordClouds from the top words used by a chosen character'),
                                             br(),
                                             h5("I've included the top 30 people, so other familiar favorites' vocabularies can be looked at!"),
@@ -438,14 +443,18 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                    br(),
                                    h5("Important note: I've conducted lemmatization for this task. Reasoning behind was, that for top words, I did want to see the 'forms' words were used, but for extracting the most personal words, I wanted to get them to their normalized forms, and then run the tf-idf algo to extract the truly personal tokens. For the lemmatization process I leveraged R's textstem library."),
                                    br(),
-                                   div(plotOutput('tfidf', height = '450px', width = '650px'), align = 'center')),
+                                   div(plotOutput('tfidf', height = '450px', width = '650px'), align = 'center'),
+                                   br(),
+                                   h5("Now this is something amazing. With a very simple math formula we can extract words that 'belong' to a certain character. To mention only a couple: Andy calling Jim Tuna, Andy's girlfriend Jessica, Angela's cat (Sprinkle), Darryl's girlfriend Val and the beanie she got from her, Dwight's sensei and dozens of other really personal things is what TF-IDF is capable of finding. Now by THIS list of words it is much more likely that we'll correctly identify a person.")),
                            
                            tabItem(tabName = "bigrams",
                                    div(h2("Why only look at words when we can analyze expressions?"), align = 'center'),
                                    div(h6('(Give the page 5 sec to load)'), align = 'center'),
                                    h5("Bigrams (pairs of words) give very familiar results to an Office fan: Andy's famous nard dog, Dwight's farm's name, the company all of them work for, these expressions all come up when running analysis of pairs of words."),
                                    br(),
-                                   div(plotOutput('bigrams', height = '450px', width = '650px'), align = 'center')),
+                                   div(plotOutput('bigrams', height = '450px', width = '650px'), align = 'center'),
+                                   br(),
+                                   h5("As TF-IDF before, bigrams are also capable of hint at people's identities. Just imagine if the facets weren't named. Who could the one person using 'bad cat', 'party planning' and 'parum pum' (from Little Drummer Boy) possibly be? Of course our favorite mean accountant, Angela")),
                            
                            
                            tabItem(tabName = "posneg",
@@ -575,14 +584,14 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                            tags$li("Looked at their overall sentiments throughout the series"),
                                            tags$li("Analyzed and visualized their sentiments when talking to each other"),
                                            tags$li("Found similarities between their vocabulary usages and tried to assign their words to 2 topics")),
-                                   br(),
                                    h5("I dove into the analysis with some pre-recorded hypotheses, of which some coule be clearly proved and disproved, and one could go either way. Let's check what I've come to with regards to my hypotheses: "),
-                                   div(tableOutput('summary_table'), align = 'center'),
+                                   div(dataTableOutput('summary_table', width = '900px'), align = 'center'),
                                    br(),
-                                   h5("As stated")
+                                   h5("As stated in the beginning and mentioned above, I was shooting for a thorough, all-around analysis of the transcripts. I wanted to leverage my NLP knowledge and apply the methods to see what they are capable of and how powerful they can be. The TF-IDF remains the most exciting tool for me, as extracting personal, unique words cannot get easier than this. Sentiment analysis - and how many different ways it can be done (positive / negative; feelings; scores; sentiments by lines; etc...) turnes out to be capable of proving hypotheses like 'meanes person', 'most positive person'. Topic analysis and its main algo - LDA - is a very interesting tool, but probably not suitable for series transcripts - maybe texts of news articles, letters and books can be better sliced into topics."),
+                                   br(),
+                                   h4("I hope You enjoyed going through my analysis and visualizations, which of cource is a more exciting for you if you're an Office fan! Thank you for reading my material!"),
+                                   div(img(src = "https://static3.srcdn.com/wordpress/wp-content/uploads/2020/03/Michael-Scott-in-Goodbye-Michael.jpg?q=50&fit=crop&w=740&h=370&dpr=1.5", height = 300, align = 'center'))
                                    )
-                          
-                           
                         )
             )
 )
@@ -1163,7 +1172,7 @@ server <- function(input, output) {
     
     # 23. summary table
     
-    output$summary_table <- renderTable(summary, bordered = T, width = "900px", rownames = F, colnames = T)
+    output$summary_table <- DT::renderDataTable(summary)
     
 }
 
