@@ -1,5 +1,6 @@
 library(shiny)
 library(shinydashboard)
+library(utils)
 library(tidyverse)
 library(stringr)
 library(tidytext)
@@ -9,10 +10,13 @@ library(DT)
 library(visNetwork)
 library(igraph)
 library(sentimentr)
+library(stopwords)
+library(textdata)
 library(textstem)
 library(topicmodels)
 library(wordcloud)
 
+Sys.setlocale(category = 'LC_ALL', locale = "Hungarian")
 
 # CODE
 
@@ -64,7 +68,7 @@ data$text <- trimws(str_replace_all(data$text, '\\[(.*?)\\]', ''))
 
 data_copy <- data
 data_copy$to <- lead(data_copy$name)
-data_copy <- dplyr::rename(data_copy, "from" = "name")
+data_copy <- rename(data_copy, "from" = "name")
 data_copy <- data_copy %>% filter((from %in% top12$name) & 
                                       (to %in% top12$name) &
                                       (to != from) )
@@ -97,7 +101,7 @@ without_names <- data %>%
     unnest_tokens(word, text) %>% 
     ungroup() %>% 
     anti_join(bind_rows(data.frame(word = stop_words$word), 
-                        data.frame(word = stopwords::stopwords(source = 'smart')),
+                        data.frame(word = stopwords(source = 'smart')),
                         data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
                         data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>%  
     count(name, word, sort = T) %>% 
@@ -108,7 +112,7 @@ with_names <- data %>%
     unnest_tokens(word, text) %>% 
     ungroup() %>% 
     anti_join(bind_rows(data.frame(word = stop_words$word), 
-                        data.frame(word = stopwords::stopwords(source = 'smart')),
+                        data.frame(word = stopwords(source = 'smart')),
                         data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')))) %>%  
     count(name, word, sort = T) %>% 
     filter(name %in% top30$name)
@@ -117,7 +121,7 @@ with_names <- data %>%
 # for bigrams
 
 my_stops <- bind_rows(data.frame(word = stop_words$word), 
-                      data.frame(word = stopwords::stopwords(source = 'smart')))
+                      data.frame(word = stopwords(source = 'smart')))
 
 # for sentiment trend
 
@@ -126,7 +130,7 @@ data_with_sentiments <- data %>%
     mutate(episode_num = group_indices()) %>% 
     ungroup() %>% 
     select(season, episode, episode_num, name, text) %>% 
-    mutate(sentiment = sentimentr::sentiment_by(text)$ave_sentiment)
+    mutate(sentiment = sentiment_by(text)$ave_sentiment)
 
 
 # for analyzing sentiment when talking to one another
@@ -138,7 +142,7 @@ convo_sentiment <- data %>%
     unnest_tokens(word, text) %>% 
     ungroup() %>% 
     anti_join(bind_rows(data.frame(word = stop_words$word), 
-                        data.frame(word = stopwords::stopwords(source = 'smart')),
+                        data.frame(word = stopwords(source = 'smart')),
                         data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
                         data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>%
     filter((name %in% top12$name) & (to %in% top12$name) & (name != to)) %>% 
@@ -157,7 +161,7 @@ convo_count <- data %>%
     unnest_tokens(word, text) %>% 
     ungroup() %>% 
     anti_join(bind_rows(data.frame(word = stop_words$word), 
-                        data.frame(word = stopwords::stopwords(source = 'smart')),
+                        data.frame(word = stopwords(source = 'smart')),
                         data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
                         data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>%
     filter((name %in% top12$name) & (to %in% top12$name) & (name != to)) %>% 
@@ -208,7 +212,7 @@ JimDwight <- data %>%
     unnest_tokens(word, text) %>% 
     ungroup() %>% 
     anti_join(bind_rows(data.frame(word = stop_words$word), 
-                        data.frame(word = stopwords::stopwords(source = 'smart')),
+                        data.frame(word = stopwords(source = 'smart')),
                         data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
                         data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>%
     filter((name %in% c('Jim', 'Dwight')) & (to %in% c('Jim', 'Dwight')) & (name != to)) %>%
@@ -228,7 +232,7 @@ JimDwight_byline <- data %>%
     filter((name %in% c('Jim', 'Dwight')) & 
                (to %in% c('Jim', 'Dwight')) &
                (to != name)) %>% 
-    mutate(sentiment = sentimentr::sentiment_by(text)$ave_sentiment) %>% 
+    mutate(sentiment = sentiment_by(text)$ave_sentiment) %>% 
     filter((sentiment != 0)) %>% 
     select(season, name, to, sentiment)
 
@@ -245,7 +249,7 @@ words_top_12 <- data %>%
   select(name, word) %>% 
   mutate(word = lemmatize_words(word)) %>% 
   anti_join(bind_rows(data.frame(word = stop_words$word), 
-                      data.frame(word = stopwords::stopwords(source = 'smart')),
+                      data.frame(word = stopwords(source = 'smart')),
                       data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
                       data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>% 
   count(name, word, sort = T) %>% 
@@ -308,7 +312,8 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                           tabName = 'summary',
                                           icon = icon('bullseye')))),
     
-    dashboardBody(tabItems(tabItem(tabName = "motivation",
+    dashboardBody(tags$head(includeHTML("google_analytics_track_id.html")),
+                  tabItems(tabItem(tabName = "motivation",
                                    fluidRow(div(h2('Why I chose this project'), align = 'center'),
                                             br()),
                                    fluidRow(column(width = 6,
@@ -658,7 +663,7 @@ server <- function(input, output) {
             unnest_tokens(word, text) %>% 
             ungroup() %>% 
             anti_join(bind_rows(data.frame(word = stop_words$word), 
-                                data.frame(word = stopwords::stopwords(source = 'smart')),
+                                data.frame(word = stopwords(source = 'smart')),
                                 data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')))) %>%  
             count(name, word, sort = T) %>% 
             filter(name %in% top12$name) %>% 
@@ -710,7 +715,7 @@ server <- function(input, output) {
             unnest_tokens(word, text) %>% 
             ungroup() %>% 
             anti_join(bind_rows(data.frame(word = stop_words$word), 
-                                data.frame(word = stopwords::stopwords(source = 'smart')),
+                                data.frame(word = stopwords(source = 'smart')),
                                 data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
                                 data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>%  
             count(name, word, sort = T) %>% 
@@ -844,7 +849,7 @@ server <- function(input, output) {
             ungroup() %>% 
             mutate(word = lemmatize_words(word)) %>% 
             anti_join(bind_rows(data.frame(word = stop_words$word), 
-                                data.frame(word = stopwords::stopwords(source = 'smart')),
+                                data.frame(word = stopwords(source = 'smart')),
                                 data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
                                 data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>% 
             inner_join(sentiments) %>% 
@@ -879,7 +884,7 @@ server <- function(input, output) {
             ungroup() %>% 
             mutate(word = lemmatize_words(word)) %>% 
             anti_join(bind_rows(data.frame(word = stop_words$word), 
-                                data.frame(word = stopwords::stopwords(source = 'smart')),
+                                data.frame(word = stopwords(source = 'smart')),
                                 data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
                                 data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>% 
             count(name, word, sort = T) %>% 
@@ -1106,7 +1111,7 @@ server <- function(input, output) {
         select(name, word) %>% 
         mutate(word = lemmatize_words(word)) %>% 
         anti_join(bind_rows(data.frame(word = stop_words$word), 
-                            data.frame(word = stopwords::stopwords(source = 'smart')),
+                            data.frame(word = stopwords(source = 'smart')),
                             data.frame(word = c('yeah', 'gonna', 'uh', 'alright', 'um', 'lot', 'hey')),
                             data.frame(word = c(tolower(unique(data$name)), 'tuna', "andy's")))) %>% 
         count(name, word, sort = T) %>% 
@@ -1172,7 +1177,7 @@ server <- function(input, output) {
     
     # 23. summary table
     
-    output$summary_table <- DT::renderDataTable(summary)
+    output$summary_table <- renderDataTable(summary)
     
 }
 
