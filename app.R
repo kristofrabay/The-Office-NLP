@@ -256,6 +256,14 @@ words_top_12_dtm_lda <- words_top_12_dtm %>% LDA(k = 12, control = list(seed = 8
 
 words_top_12_dtm_lda_gammas <- tidy(words_top_12_dtm_lda, matrix = 'gamma')
 
+# for summary
+
+summary <- read.csv("www/summary_table.csv")
+summary <- summary %>% mutate_all(as.character)
+colnames(summary)[1] <- '#'
+
+
+
 
 # SHINY
 
@@ -555,7 +563,26 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                                    br(),
                                                    div(plotOutput('lda_top_words', height = '450px', width = '580px'), align = 'center'),
                                                    br()))
-                                  )
+                                  ),
+                           
+                           tabItem(tabName = 'summary',
+                                   div(h2("What I have looked at and what I have found..."), align = 'center'),
+                                   br(),
+                                   h5("During this project I've conducted a thorough analysis of the whole The Office series' transcripts. I've: "),
+                                   tags$ul(tags$li("Sorted out most talkative people"),
+                                           tags$li("Checked their most frequently used words, expressions & most personal / unique words"),
+                                           tags$li("Visualized and analyzed conversation count between them"),
+                                           tags$li("Looked at their overall sentiments throughout the series"),
+                                           tags$li("Analyzed and visualized their sentiments when talking to each other"),
+                                           tags$li("Found similarities between their vocabulary usages and tried to assign their words to 2 topics")),
+                                   br(),
+                                   h5("I dove into the analysis with some pre-recorded hypotheses, of which some coule be clearly proved and disproved, and one could go either way. Let's check what I've come to with regards to my hypotheses: "),
+                                   div(tableOutput('summary_table'), align = 'center'),
+                                   br(),
+                                   h5("As stated")
+                                   )
+                          
+                           
                         )
             )
 )
@@ -1134,7 +1161,10 @@ server <- function(input, output) {
       
     })
     
-
+    # 23. summary table
+    
+    output$summary_table <- renderTable(summary, bordered = T, width = "900px", rownames = F, colnames = T)
+    
 }
 
 

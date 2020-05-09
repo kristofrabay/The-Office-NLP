@@ -1,0 +1,8 @@
+#,Hypothesis,Result,Reasoning,Where to find
+1.,TF-IDF outlines hobbies,PROVED,tf idf reasoning,TF-IDF
+2.,Sentiment trend hints at more positive and negative episodes,DISPROVED,sesonal reasoning,Sentiment with seasonal trend
+3.,Angela is most negative person,PROVED (to some extent),angela reas,"Top positive and negative words;
+Sentiments between all characters"
+4.,Jim and Pam's relationship is most mutually positive,PROVED,jimpam rea,Sentiments between all characters
+5.,Jim and Dwight's relationship got better towards the end,PROVED,jimdwight rea,Jim & Dwight's sentiment trend
+6.,LDA can cluster characters' topics into two: business & fun,DISPROVED,lda rea,Topic modeling with LDA
