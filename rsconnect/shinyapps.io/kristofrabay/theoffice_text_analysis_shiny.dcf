@@ -1,0 +1,10 @@
+name: theoffice_text_analysis_shiny
+title:
+username:
+account: kristofrabay
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2272644
+bundleId: 3125239
+url: https://kristofrabay.shinyapps.io/theoffice_text_analysis_shiny/
+when: 1589056874.93038
