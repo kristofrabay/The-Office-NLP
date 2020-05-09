@@ -1,8 +1,7 @@
-#,Hypothesis,Result,Reasoning,Where to find
-1.,TF-IDF outlines hobbies,PROVED,tf idf reasoning,TF-IDF
-2.,Sentiment trend hints at more positive and negative episodes,DISPROVED,sesonal reasoning,Sentiment with seasonal trend
-3.,Angela is most negative person,PROVED (to some extent),angela reas,"Top positive and negative words;
-Sentiments between all characters"
-4.,Jim and Pam's relationship is most mutually positive,PROVED,jimpam rea,Sentiments between all characters
-5.,Jim and Dwight's relationship got better towards the end,PROVED,jimdwight rea,Jim & Dwight's sentiment trend
-6.,LDA can cluster characters' topics into two: business & fun,DISPROVED,lda rea,Topic modeling with LDA
+#,Hypothesis,Result,Reasoning,Tab
+1.,TF-IDF outlines hobbies,PROVED,Very unique words were extracted such as Tuna (indicating Andy calling Jim) or Sensei (indicating Dwight's karate master),TF-IDF
+2.,Sentiment trend hints at more positive and negative episodes,DISPROVED,Trendlines did not show any major ups and dows only volatility,Sentiment with seasonal trend
+3.,Angela is most negative person,PROVED (to some extent),Angela IS one of the more negative people but may not be the most negative (her contributed negativity is large and sentiment network does show negativity) but Oscar and Darryl also came close to being 'meanest',Top positive and negative words and Sentiments between all characters
+4.,Jim and Pam's relationship is most mutually positive,PROVED,Strongest (greenest) edge in visNetwork and both are #1 on each other's 'niceness' lists,Sentiments between all characters
+5.,Jim and Dwight's relationship got better towards the end,PROVED,Calcualting with multiple methods trend did seem to end higher than usual spots,Jim & Dwight's sentiment trend
+6.,LDA can cluster characters' topics into two: business & fun,DISPROVED,No clear topics are extractable but similar vocabularies can be found,Topic modeling with LDA

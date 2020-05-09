@@ -259,11 +259,9 @@ words_top_12_dtm_lda_gammas <- tidy(words_top_12_dtm_lda, matrix = 'gamma')
 
 # for summary
 
-summary <- read.csv("www/summary_table.csv")
+summary <- read.csv("www/summary_table.csv", sep = ',')
 summary <- summary %>% mutate_all(as.character)
 colnames(summary)[1] <- '#'
-
-
 
 
 # SHINY
@@ -453,7 +451,7 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                    br(),
                                    div(plotOutput('bigrams', height = '450px', width = '650px'), align = 'center'),
                                    br(),
-                                   h5("As TF-IDF before, bigrams are also capable of hint at people's identities. Just imagine if the facets weren't named. Who could the one person using 'bad cat', 'party planning' and 'parum pum' (from Little Drummer Boy) possibly be? Of course our favorite mean accountant, Angela")),
+                                   h5("As TF-IDF before, bigrams are also capable of hinting at people's identities. Just imagine if the facets weren't named. Who could the one person using 'bad cat', 'party planning' and 'parum pum' (from Little Drummer Boy) possibly be? Of course our favorite mean accountant, Angela")),
                            
                            
                            tabItem(tabName = "posneg",
@@ -475,7 +473,7 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                                    div(plotOutput('sentiment_afinn', height = '450px', width = '580px'), align = 'center'),
                                                    br()),
                                             br(),
-                                            h4("Interesting to see how using a sentiment scale like AFINN and multiplying word counts with their respective scores outlines the words that contribute the most positivity or negativity to a certain character's vocabulary"))
+                                            h5("The two approaches give similar results. Interesting to see how using a sentiment scale like AFINN and multiplying word counts with their respective scores outlines the words that contribute the most positivity or negativity to a certain character's vocabulary"))
                                     ),
                            
                            tabItem(tabName = "trend_sent",
@@ -495,7 +493,7 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                                    div(plotOutput('sentiment_season', height = '450px', width = '580px'), align = 'center'),
                                                    br()),
                                             br(),
-                                            h4("Looking at people one-by-one and seeing if their average sentiment per episode may hint at something failed, but I quickly turned to analyzing sentiments when people were talking to other people, and the results got substantially more interesting. Take a look on the next page!"))), 
+                                            h5("Looking at people one-by-one and seeing if their average sentiment per episode may hint at something failed, but I quickly turned to analyzing sentiments when people were talking to other people, and the results got substantially more interesting. Take a look on the next page!"))), 
                            
                            
                            tabItem(tabName = "between_sent",
@@ -545,14 +543,14 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                                    div(plotOutput('jd_lines', height = '350px', width = '580px'), align = 'center'),
                                                    br()),
                                             br(),
-                                            h4("The tendecies are much alike, so the patterns that AFINN and sentimentR give seem to be valid: although Jim used to be nicer to Dwight on average, Dwight started easing up on Jim and the two ended the series being great friends who don't tease each other any more."))),
+                                            h5("The tendecies are much alike, so the patterns that AFINN and sentimentR give seem to be valid: although Jim used to be nicer to Dwight on average, Dwight started easing up on Jim and the two ended the series being great friends who don't tease each other any more."))),
                            
                            
                            tabItem(tabName = "lda",
                                    div(h2("LDA topic analysis helps identify people with similar vocabularies, but actual topics are not extractable"), align = 'center'),
                                    div(h6('(Give the page 5 sec to load)'), align = 'center'),
                                    h4("1. Creating 12 clusters (topics) for the top 12 people to find similar speakers"),
-                                   h5("Something to write here"),
+                                   h5("As stated, LDA can help us find people who 'choose the same words' or 'talk alike'. From the plot it seems like for example Pam and Jim have their own vocabularies that they use most of the time, but then there is topic #8, which seems to be found to some extent in both character's words. This may be talking about their baby girl, talking about their families, ot simply personal things that they share. Oscar and Angela share a vocabulary, mainly due to both of them being accountants (and both are somewhat mean)."),
                                    br(),
                                    div(plotOutput('lda_12', height = '450px', width = '750px'), align = 'center'),
                                    br(),
@@ -570,7 +568,9 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                                    h5("B: Top words in each topic"),
                                                    br(),
                                                    div(plotOutput('lda_top_words', height = '450px', width = '580px'), align = 'center'),
-                                                   br()))
+                                                   br())),
+                                   br(),
+                                   h5("As mentioned, LDA cannot clearly create two very differing vocabs for people, both still, the words used in the two clusters seem to be somewhat different. LDA may better be leveraged when it comes to news articles, book chapters, etc...")
                                   ),
                            
                            tabItem(tabName = 'summary',
@@ -589,7 +589,8 @@ ui <- dashboardPage(title = 'Text Analysis on The Office',
                                    h5("As stated in the beginning and mentioned above, I was shooting for a thorough, all-around analysis of the transcripts. I wanted to leverage my NLP knowledge and apply the methods to see what they are capable of and how powerful they can be. The TF-IDF remains the most exciting tool for me, as extracting personal, unique words cannot get easier than this. Sentiment analysis - and how many different ways it can be done (positive / negative; feelings; scores; sentiments by lines; etc...) turnes out to be capable of proving hypotheses like 'meanes person', 'most positive person'. Topic analysis and its main algo - LDA - is a very interesting tool, but probably not suitable for series transcripts - maybe texts of news articles, letters and books can be better sliced into topics."),
                                    br(),
                                    h4("I hope You enjoyed going through my analysis and visualizations, which of cource is a more exciting for you if you're an Office fan! Thank you for reading my material!"),
-                                   div(img(src = "https://static3.srcdn.com/wordpress/wp-content/uploads/2020/03/Michael-Scott-in-Goodbye-Michael.jpg?q=50&fit=crop&w=740&h=370&dpr=1.5", height = 300, align = 'center'))
+                                   HTML('<center><img src="https://static3.srcdn.com/wordpress/wp-content/uploads/2020/03/Michael-Scott-in-Goodbye-Michael.jpg?q=50&fit=crop&w=740&h=370&dpr=1.5"></center>')
+                                   #div(img(src = "https://static3.srcdn.com/wordpress/wp-content/uploads/2020/03/Michael-Scott-in-Goodbye-Michael.jpg?q=50&fit=crop&w=740&h=370&dpr=1.5", height = 300, align = 'center'))
                                    )
                         )
             )
