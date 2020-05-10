@@ -1,10 +1,10 @@
 library(shiny)
 library(shinydashboard)
+library(rsconnect)
 library(utils)
 library(tidyverse)
 library(stringr)
 library(tidytext)
-library(plotly)
 library(data.table)
 library(DT)
 library(visNetwork)
@@ -15,8 +15,13 @@ library(textdata)
 library(textstem)
 library(topicmodels)
 library(wordcloud)
+library(RColorBrewer)
 
-Sys.setlocale(category = 'LC_ALL', locale = "Hungarian")
+#Sys.setlocale(category = 'LC_ALL', locale = "Hungarian")
+
+# ShinyApps.io cannot download AFINN library - an error I spent 5 hours on - 
+afinn <- readRDS("www/afinn.RDS")
+
 
 # CODE
 
@@ -28,25 +33,25 @@ data$episode <- as.integer(str_extract(data$title, "(?<=x)\\d{2}")) # x preceeds
 
 data <- data %>% rename('text' = 'line')
 
-table(data$season) # 19 is error caused by website
+#table(data$season) # 19 is error caused by website
 data <- data %>% filter(season != 19)
 
-length(unique(data$name)) # 820 different people
+#length(unique(data$name)) # 820 different people
 data$name <- trimws(str_replace_all(data$name, "[^[:alpha:]]", " ")) # drop special chars, trim ws
-length(unique(data$name)) # down to 771 diff people
+#length(unique(data$name)) # down to 771 diff people
 
-agrep('michael', unique(data$name), max.distance = 2, value = T, ignore.case = T)
+#agrep('michael', unique(data$name), max.distance = 2, value = T, ignore.case = T)
 michael_typos <- c("Michel|Michael|MIchael|Micahel|Micael|Micheal|Michae|Michal|Mihael|Micael")
 data$name <- str_replace_all(data$name, michael_typos, "Michael")
 
-agrep('dwight', unique(data$name), max.distance = 2, value = T, ignore.case = T)
+#agrep('dwight', unique(data$name), max.distance = 2, value = T, ignore.case = T)
 data$name <- str_replace_all(data$name, 'Dight', "Dwight")
 
-agrep('phyllis', unique(data$name), max.distance = 2, value = T, ignore.case = T)
+#agrep('phyllis', unique(data$name), max.distance = 2, value = T, ignore.case = T)
 phyllis_typos <- c("Phylis|Phyliss")
 data$name <- str_replace_all(data$name, phyllis_typos, "Phyllis")
 
-agrep('darryl', unique(data$name), max.distance = 2, value = T, ignore.case = T)
+#agrep('darryl', unique(data$name), max.distance = 2, value = T, ignore.case = T)
 darryl_typos <- c("Darry|Daryl|Darrly")
 data$name <- str_replace_all(data$name, darryl_typos, "Darryl")
 data$name <- str_replace_all(data$name, 'Darryll', "Darryl")
@@ -148,7 +153,7 @@ convo_sentiment <- data %>%
     filter((name %in% top12$name) & (to %in% top12$name) & (name != to)) %>% 
     count(name, to, word, sort = T) %>% 
     ungroup() %>% 
-    inner_join(get_sentiments(lexicon = 'afinn')) %>% 
+    inner_join(afinn) %>% 
     mutate(sentiment_value = n * value) %>% 
     group_by(name, to) %>% 
     summarize(sentiment_score = sum(sentiment_value)) %>% 
@@ -218,7 +223,7 @@ JimDwight <- data %>%
     filter((name %in% c('Jim', 'Dwight')) & (to %in% c('Jim', 'Dwight')) & (name != to)) %>%
     count(season, name, to, word) %>% 
     ungroup() %>% 
-    inner_join(get_sentiments(lexicon = 'afinn')) %>% 
+    inner_join(afinn) %>% 
     mutate(sentiment_value = n * value) %>% 
     group_by(season, name, to) %>% 
     summarize(sentiment_score = sum(sentiment_value)) %>% 
@@ -263,9 +268,7 @@ words_top_12_dtm_lda_gammas <- tidy(words_top_12_dtm_lda, matrix = 'gamma')
 
 # for summary
 
-summary <- read.csv("www/summary_table.csv", sep = ',')
-summary <- summary %>% mutate_all(as.character)
-colnames(summary)[1] <- '#'
+summary <- readRDS("www/summary_table.RDS")
 
 
 # SHINY
@@ -890,7 +893,7 @@ server <- function(input, output) {
             count(name, word, sort = T) %>% 
             ungroup() %>% 
             filter(name %in% top12$name) %>% 
-            inner_join(get_sentiments(lexicon = 'afinn')) %>% 
+            inner_join(afinn) %>% 
             mutate(sentiment_value = n * value) %>% 
             group_by(name) %>% 
             top_n(10, wt = abs(sentiment_value)) %>% 
