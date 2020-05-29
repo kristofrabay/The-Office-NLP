@@ -1020,7 +1020,9 @@ server <- function(input, output) {
             geom_hline(yintercept = median(convo$sentiment_score), size = 1) +
             theme_bw() + 
             labs(title = 'Distribution of total sentiment scores by person',
-                 subtitle = 'Vertical line represent median sentiment score') +
+                 subtitle = 'Vertical line represent median sentiment score',
+                 y = 'Sentiment scores', 
+                 x= 'Names') +
             scale_y_continuous(breaks = seq(-130, 350, 20)) +
             coord_flip()
         
