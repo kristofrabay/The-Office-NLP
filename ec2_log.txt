@@ -1,0 +1,59 @@
+    1  exit
+    2  > ~/.bash_history 
+    3  bash
+    4  exit
+    5  git config --global user.email 'kristof.rabay@gmail.com'
+    6  git config --global user.name 'Kristof Rabay'
+    7  sudo docker run --rm hello-world
+    8  sudo docker image rm hello-world
+    9  docker status
+   10  docker --status
+   11  docker -v
+   12  java -v
+   13  java --version
+   14  java -version
+   15  docker -v
+   16  docker ls
+   17  docker --help
+   18  docker image ls
+   19  sudo docker image ls
+   20  sudo cat /etc/shinyproxy/application.yml
+   21  sudo cat /var/log/shinyproxy.log
+   22  sudo touch /var/log/shinyproxy.log
+   23  sudo cat /var/log/shinyproxy.log
+   24  sudo systemctl restart shinyproxy
+   25  sudo cat /etc/nginx/sites-enabled/default
+   26  sudo systemctl restart nginx
+   27  sudo docker build -t the_office_nlp .
+   28  sudo docker image ls
+   29* 
+   30  docker -ti the_office_nlp /bin/bash
+   31  sudo docker run -it the_office_nlp
+   32  nano /etc/shinyproxy/application.yml
+   33  ls
+   34  nano /etc/shinyproxy/application.yml
+   35  cat /etc/shinyproxy/application.yml
+   36  sudo systemctl restart shinyproxy
+   37  cat /etc/shinyproxy/application.yml
+   38  nano /etc/shinyproxy/application.yml
+   39  cat /etc/shinyproxy/application.yml
+   40  sudo systemctl restart shinyproxy
+   41  nano /etc/shinyproxy/application.yml
+   42  cat /etc/shinyproxy/application.yml
+   43  sudo systemctl restart shinyproxy
+   44  tail -f /var/log/shinyproxy.log
+   45  sudo docker build -t the_office_nlp .
+   46  sudo systemctl restart shinyproxy
+   47  tail -f /var/log/shinyproxy.log 
+   48  sudo docker run -it the_office_nlp
+   49  sudo docker build -t the_office_nlp .
+   50  sudo docker run -it the_office_nlp
+   51  docker -ti the_office_nlp /bin/bash
+   52  sudo docker run -it the_office_nlp /bin/bash
+   53  sudo docker build -t the_office_nlp .
+   54  sudo docker run -it the_office_nlp /bin/bash
+   55  sudo docker run -it the_office_nlp
+   56  sudo systemctl restart shinyproxy
+   57  ls -la
+   58  history
+   59  history > ec2_log.txt
