@@ -45,5 +45,4 @@ COPY www/* /app/www/
 COPY google_analytics_track_id.html /app/google_analytics_track_id.html
 
 EXPOSE 3838
-
-CMD ["R", "-e", "shiny::runApp('/app/')"]
+CMD ["R", "-e", "shiny::runApp('/app', port = 3838, host = '0.0.0.0')"]

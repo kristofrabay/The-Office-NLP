@@ -57,3 +57,22 @@
    57  ls -la
    58  history
    59  history > ec2_log.txt
+   60  tail -f /var/log/shinyproxy.log 
+   61  sudo docker run -it the_office_nlp /bin/bash
+   62  docker container ls
+   63  sudo docker container ls
+   64  sudo docker container ls -all
+   65  sudo docker container ls -a
+   66  docker logs 89c67fa8bc60
+   67  sudo docker logs 89c67fa8bc60
+   68  sudo docker build -t the_office_nlp .
+   69  sudo systemctl restart shinyproxy
+   70  sudo docker container ls -a
+   71  sudo docker logs 7158b65c71d3
+   72  sudo docker container ls -a
+   73  cat /etc/shinyproxy/application.yml
+   74  nano /etc/shinyproxy/application.yml
+   75  sudo systemctl restart shinyproxy
+   76  sudo docker container ls -a
+   77  sudo docker logs 9c2658ca16b9
+   78  history > ec2_log.txt 
